@@ -1,0 +1,13 @@
+[package]
+name = "orbis"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "4.4.4", features = ["derive"] }
+swc = "0.266.17"
+swc_common = { version = "0.32.1", features = ["tty-emitter"] }
+swc_ecma_ast = "0.109.1"
+swc_ecma_parser = "0.140.0"
