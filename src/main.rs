@@ -1,39 +1,38 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use clap::Parser;
-use orbis::get_imports;
+use orbis::{get_imports, resolver::Resolver};
 
 #[derive(Parser, Debug)]
 struct Args {
-    #[arg()]
+    #[clap()]
     path: String,
+
+    #[clap(short = 'c', long = "config")]
+    ts_config: Option<String>,
 }
 
 fn main() {
     let args = Args::parse();
 
-    show_path_imports(Path::new(&args.path))
-}
+    if let Some(ts_config) = args.ts_config {
+        // TODO: Handle no ts
+        let ts_config = Path::new(&ts_config);
+        let resolver = Resolver::try_from(ts_config).expect("plop");
 
-fn show_path_imports(path: &Path) {
-    if path.is_file() {
-        let imports = get_imports(path);
-
-        show_dependencies(path, &imports);
-    } else if path.is_dir() {
-        for file in path.read_dir().expect("Failed to read directory") {
-            if let Ok(file) = file {
-                show_path_imports(&file.path())
-            }
+        let path = Path::new(&args.path);
+        if path.is_file() {
+            let imports = get_imports(path, &resolver).expect("yolo");
+            show_dependencies(path, imports);
+        } else {
+            panic!("Unexpected file type")
         }
-    } else {
-        panic!("Unexpected file type")
     }
 }
 
-fn show_dependencies(path: &Path, imports: &Vec<String>) {
+fn show_dependencies(path: &Path, imports: Vec<PathBuf>) {
     println!("{}", path.display());
     for import in imports {
-        println!("  {}", import);
+        println!("  {}", import.display());
     }
 }
