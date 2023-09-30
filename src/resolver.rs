@@ -61,9 +61,13 @@ impl Resolver {
         } else {
             self.resolve_node_module(dependency)
                 .or(self.resolve_absolute(dependency))
-        }?;
+        };
 
-        Ok(path)
+        path.context(format!(
+            "Failed resolving {} for file {}",
+            dependency,
+            current_file.display()
+        ))
     }
 
     fn resolve_relative(&self, current_file: &Path, dependency: &str) -> anyhow::Result<PathBuf> {
@@ -71,13 +75,17 @@ impl Resolver {
             .parent()
             .context(format!("Failed getting parent of {}", dependency))?;
 
-        let target_path = current_dir.to_owned().join(dependency);
-        let target_path = self.resolve_module(&target_path);
+        let original_target_path = current_dir.to_owned().join(dependency);
+        let target_path = self.resolve_module(&original_target_path)?;
 
-        target_path.clone().canonicalize().context(format!(
-            "Failed finding path {}",
-            target_path.display().to_string()
-        ))
+        target_path
+            .clone()
+            .canonicalize()
+            .context(format!(
+                "Failed finding path resolving relative path {}",
+                original_target_path.display().to_string()
+            ))
+            .context(format!("{}", target_path.display().to_string()))
     }
 
     fn resolve_absolute(&self, dependency: &str) -> anyhow::Result<PathBuf> {
@@ -86,32 +94,43 @@ impl Resolver {
             .clone()
             .context("resolve_absolute should not be called without a base url")?;
 
-        let target_path = target_path.join(dependency);
-        let target_path = self.resolve_module(&target_path);
+        let origin_target_path = target_path.join(dependency);
+        let target_path = self.resolve_module(&origin_target_path.clone())?;
 
-        target_path
-            .canonicalize()
-            .context(format!("Failed finding path {}", dependency))
+        target_path.canonicalize().context(format!(
+            "Failed resolving absolute path {}",
+            origin_target_path.display()
+        ))
     }
 
     fn resolve_node_module(&self, dependency: &str) -> anyhow::Result<PathBuf> {
         let target_path = self.project_url.clone();
 
-        let target_path = target_path.join("node_modules").join(dependency);
+        let mut dependency_split = dependency.split('/');
+        let mut dependency_path = dependency_split.next().unwrap().to_owned();
+        if dependency_path.starts_with("@") {
+            dependency_path = format!(
+                "{}/{}",
+                dependency_path,
+                dependency_split.next().unwrap().to_string()
+            );
+        }
+        let target_path = target_path.join("node_modules").join(dependency_path);
 
         target_path
             .canonicalize()
-            .context(format!("Failed finding path {}", dependency))
+            .context("resolve_node_module")
+            .context(format!("Failed resolving module {}", dependency))
     }
 
-    fn resolve_module(&self, module: &PathBuf) -> PathBuf {
-        let mut target_path = module.clone();
-        if module.is_dir() {
-            target_path = module.join("index");
-        }
-        target_path.set_extension(self.extension());
-
-        target_path
+    fn resolve_module(&self, module: &PathBuf) -> anyhow::Result<PathBuf> {
+        module
+            .canonicalize()
+            .or(module
+                .join(format!("index.{}", self.extension()))
+                .canonicalize())
+            .or(PathBuf::from(format!("{}.{}", module.display(), self.extension())).canonicalize())
+            .context("Failed resolving file")
     }
 
     fn extension(&self) -> &str {

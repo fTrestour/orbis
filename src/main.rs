@@ -37,7 +37,13 @@ fn main() {
 
 fn handle_path(path: &Path, resolver: &Resolver, graph: &mut Graph) {
     if path.is_file() {
-        let imports = get_imports(path, &resolver).expect("Failed getting imports");
+        let imports = match get_imports(path, &resolver) {
+            Ok(imports) => imports,
+            Err(e) => {
+                eprintln!("{}", e);
+                return;
+            }
+        };
         graph.add_file(path, imports);
     } else if path.is_dir() {
         for file in path.read_dir().expect("Could not read directory") {

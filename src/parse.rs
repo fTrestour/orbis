@@ -6,6 +6,13 @@ use swc_ecma_ast::{EsVersion, Module};
 use swc_ecma_parser::{parse_file_as_module, Syntax};
 
 pub fn try_parse(path: &Path) -> Result<Module, anyhow::Error> {
+    let extension = path.extension().and_then(|ext| ext.to_str());
+    if let Some(extension) = extension {
+        if extension != "js" && extension != "ts" {
+            bail!("Invalid extension {}", extension)
+        }
+    }
+
     let code_map = SourceMap::default();
     let file = code_map.load_file(path)?;
 
