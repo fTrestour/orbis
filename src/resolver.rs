@@ -49,23 +49,27 @@ impl Resolver {
     }
 
     pub fn resolve(&self, current_file: &Path, dependency: &str) -> anyhow::Result<PathBuf> {
-        if dependency.starts_with(".") || dependency.starts_with("..") {
+        let path = if dependency.starts_with(".") {
             self.resolve_relative(current_file, dependency)
+        } else if dependency.starts_with("..") {
+            self.resolve_relative(
+                current_file
+                    .parent()
+                    .context(format!("Failed getting parent of {}", dependency))?,
+                dependency,
+            )
         } else {
             self.resolve_node_module(dependency)
                 .or(self.resolve_absolute(dependency))
-        }
+        }?;
+
+        Ok(path)
     }
 
     fn resolve_relative(&self, current_file: &Path, dependency: &str) -> anyhow::Result<PathBuf> {
-        let mut current_dir = current_file
+        let current_dir = current_file
             .parent()
             .context(format!("Failed getting parent of {}", dependency))?;
-        if dependency.starts_with("..") {
-            current_dir = current_dir
-                .parent()
-                .context(format!("Failed getting parent of {}", dependency))?;
-        }
 
         let target_path = current_dir.to_owned().join(dependency);
         let target_path = self.resolve_module(&target_path);
