@@ -18,7 +18,7 @@ pub fn get_imports(path: &Path, resolver: &Resolver) -> anyhow::Result<Vec<PathB
 
             let resolved_import = resolver
                 .resolve(path, &import)
-                .map_err(|err| println!("{:?}", err));
+                .map_err(|err| eprintln!("{:?}", err));
             resolved_import.ok()
         })
         .collect())

@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use clap::Parser;
-use orbis::{get_imports, graph::create_graph, resolver::Resolver};
+use orbis::{get_imports, graph::Graph, resolver::Resolver};
 
 #[derive(Parser, Debug)]
 struct Args {
@@ -27,11 +27,26 @@ fn main() {
         panic!("--project should be specified if --config is not");
     };
 
+    let mut graph = Graph::default();
+
     let path = Path::new(&args.path);
+    handle_path(path, &resolver, &mut graph);
+
+    println!("{}", graph.to_dot());
+}
+
+fn handle_path(path: &Path, resolver: &Resolver, graph: &mut Graph) {
     if path.is_file() {
-        let imports = get_imports(path, &resolver).unwrap();
-        println!("{}", create_graph(path, imports));
+        let imports = get_imports(path, &resolver).expect("Failed getting imports");
+        graph.add_file(path, imports);
+    } else if path.is_dir() {
+        for file in path.read_dir().expect("Could not read directory") {
+            match file {
+                Ok(file) => handle_path(&file.path(), resolver, graph),
+                Err(e) => eprintln!("{:?}", e),
+            }
+        }
     } else {
-        panic!("This tool does not support directories");
+        panic!("Unexpected argument");
     }
 }

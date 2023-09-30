@@ -1,18 +1,45 @@
-use std::path::{Path, PathBuf};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 
 use petgraph::{
     dot::{Config, Dot},
+    graph::NodeIndex,
     prelude::DiGraph,
 };
 
-pub fn create_graph(path: &Path, imports: Vec<PathBuf>) -> String {
-    let mut g = DiGraph::new();
-    let path_node = g.add_node(path.display().to_string());
+#[derive(Default)]
+pub struct Graph {
+    graph: DiGraph<String, isize, usize>,
+    nodes: HashMap<String, usize>,
+}
 
-    for import in imports.iter() {
-        let import_node = g.add_node(import.display().to_string());
-        g.add_edge(path_node, import_node, 1);
+impl Graph {
+    pub fn add_file(&mut self, path: &Path, imports: Vec<PathBuf>) {
+        let origin = self.get_node(path);
+
+        for import in imports.iter() {
+            let target = self.get_node(import);
+            self.graph
+                .add_edge(NodeIndex::from(origin), NodeIndex::from(target), 1);
+        }
     }
 
-    Dot::with_config(&g, &[Config::EdgeNoLabel]).to_string()
+    fn get_node(&mut self, path: &Path) -> NodeIndex<usize> {
+        let path = path.display().to_string();
+
+        self.nodes
+            .get(&path)
+            .map(|id| NodeIndex::from(*id))
+            .unwrap_or_else(|| {
+                let new_node = self.graph.add_node(path.clone());
+                self.nodes.insert(path, new_node.index());
+                new_node
+            })
+    }
+
+    pub fn to_dot(&self) -> String {
+        Dot::with_config(&self.graph, &[Config::EdgeNoLabel]).to_string()
+    }
 }
