@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use clap::Parser;
-use orbis::{get_imports, resolver::Resolver};
+use orbis::{get_imports, graph::create_graph, resolver::Resolver};
 
 #[derive(Parser, Debug)]
 struct Args {
@@ -30,11 +30,7 @@ fn main() {
     let path = Path::new(&args.path);
     if path.is_file() {
         let imports = get_imports(path, &resolver).unwrap();
-
-        println!("{}", path.display());
-        for import in imports {
-            println!("  {}", import.display());
-        }
+        println!("{}", create_graph(path, imports));
     } else {
         panic!("This tool does not support directories");
     }

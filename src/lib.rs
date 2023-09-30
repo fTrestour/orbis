@@ -1,3 +1,4 @@
+pub mod graph;
 mod parse;
 pub mod resolver;
 mod ts_config;
