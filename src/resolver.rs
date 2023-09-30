@@ -48,6 +48,10 @@ impl Resolver {
         }
     }
 
+    pub fn relative_to_project_root<'a>(&self, path: &'a Path) -> &'a Path {
+        path.strip_prefix(self.project_url.clone()).unwrap()
+    }
+
     pub fn resolve(&self, current_file: &Path, dependency: &str) -> anyhow::Result<PathBuf> {
         let path = if dependency.starts_with(".") {
             self.resolve_relative(current_file, dependency)

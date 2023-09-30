@@ -21,8 +21,13 @@ impl Graph {
 
         for import in imports.iter() {
             let target = self.get_node(import);
-            self.graph
-                .add_edge(NodeIndex::from(origin), NodeIndex::from(target), 1);
+            if origin == target {
+                continue;
+            }
+
+            if self.graph.find_edge(origin, target) == None {
+                self.graph.add_edge(origin, target, 1);
+            }
         }
     }
 
