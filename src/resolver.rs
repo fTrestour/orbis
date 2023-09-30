@@ -22,14 +22,8 @@ impl TryFrom<&Path> for Resolver {
             ))?
             .to_owned();
 
-        let ts_config = TsConfig::try_from(ts_config_path);
-
-        let base_url = match &ts_config {
-            Ok(ts_config) => {
-                Some(PathBuf::from(ts_config_directory.clone()).join(ts_config.base_url()))
-            }
-            Err(_) => None,
-        };
+        let ts_config = TsConfig::try_from(ts_config_path)?;
+        let base_url = ts_config.compiler_options.base_url.map(PathBuf::from);
 
         Ok(Self {
             base_url,

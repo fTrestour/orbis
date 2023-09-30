@@ -5,11 +5,13 @@ mod ts_config;
 
 use std::path::{Path, PathBuf};
 
+use anyhow::Context;
 use parse::try_parse;
 use resolver::Resolver;
 
 pub fn get_imports(path: &Path, resolver: &Resolver) -> anyhow::Result<Vec<PathBuf>> {
-    Ok(try_parse(path)?
+    Ok(try_parse(path)
+        .context(format!("Error parsing file {}", path.display()))?
         .body
         .into_iter()
         .filter_map(|module_item| {
