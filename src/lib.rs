@@ -1,3 +1,4 @@
+mod dot_petgraph;
 pub mod graph;
 mod parse;
 pub mod resolver;

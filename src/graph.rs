@@ -3,15 +3,13 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use petgraph::{
-    dot::{Config, Dot},
-    graph::NodeIndex,
-    prelude::DiGraph,
-};
+use petgraph::{dot::Dot, graph::NodeIndex, prelude::DiGraph};
+
+use crate::dot_petgraph::{DotNode, FromDotNode, NodeAttribute, NodeShape};
 
 #[derive(Default)]
 pub struct Graph {
-    graph: DiGraph<String, isize, usize>,
+    graph: DiGraph<DotNode, isize, usize>,
     nodes: HashMap<String, usize>,
 }
 
@@ -38,13 +36,25 @@ impl Graph {
             .get(&path)
             .map(|id| NodeIndex::from(*id))
             .unwrap_or_else(|| {
-                let new_node = self.graph.add_node(path.clone());
+                let new_node = self.graph.add_node(DotNode::new(vec![
+                    NodeAttribute::Label(path.clone()),
+                    NodeAttribute::Shape(NodeShape::Box),
+                    NodeAttribute::Style(vec!["filled".to_owned(), "rounded".to_owned()]),
+                    NodeAttribute::FillColor("\"#34495e\"".to_owned()),
+                    NodeAttribute::Color("\"#34495e\"".to_owned()),
+                    NodeAttribute::FontColor("white".to_owned()),
+                    NodeAttribute::FontName("Helvetica".to_owned()),
+                ]));
                 self.nodes.insert(path, new_node.index());
                 new_node
             })
     }
 
     pub fn to_dot(&self) -> String {
-        Dot::with_config(&self.graph, &[Config::EdgeNoLabel]).to_string()
+        Dot::with_plop(
+            &self.graph,
+            // TODO use url for pages load
+        )
+        .to_string()
     }
 }
